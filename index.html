@@ -1021,31 +1021,71 @@
     <p class="footer-copy">© 2025 Plomero Angel · Todos los derechos reservados · CABA, Buenos Aires, Argentina</p>
   </footer>
 
-  <!-- ===== DRAG-TO-SCROLL SLIDER JS ===== -->
+  <!-- ===== AUTO-SCROLL + DRAG/TOUCH SLIDER JS ===== -->
   <script>
     (function () {
       const track = document.getElementById('sliderTrack');
       if (!track) return;
 
-      let isDown = false, startX, scrollLeft;
+      const speed = 0.8; // px per frame
+      let animId;
+      let isInteracting = false;
+      let startX, startScrollLeft;
+      let touchStartX, touchStartScroll;
 
+      function autoScroll() {
+        if (!isInteracting) {
+          track.scrollLeft += speed;
+          // When we reach the end, jump back to start seamlessly
+          if (track.scrollLeft >= track.scrollWidth - track.clientWidth - 2) {
+            track.scrollLeft = 0;
+          }
+        }
+        animId = requestAnimationFrame(autoScroll);
+      }
+
+      animId = requestAnimationFrame(autoScroll);
+
+      // ---- Mouse drag ----
       track.addEventListener('mousedown', e => {
-        isDown = true;
-        track.classList.add('active');
+        isInteracting = true;
         startX = e.pageX - track.offsetLeft;
-        scrollLeft = track.scrollLeft;
+        startScrollLeft = track.scrollLeft;
+        track.style.cursor = 'grabbing';
       });
 
-      track.addEventListener('mouseleave', () => { isDown = false; });
-      track.addEventListener('mouseup',    () => { isDown = false; });
+      document.addEventListener('mouseup', () => {
+        isInteracting = false;
+        track.style.cursor = 'grab';
+      });
 
-      track.addEventListener('mousemove', e => {
-        if (!isDown) return;
+      document.addEventListener('mousemove', e => {
+        if (!isInteracting) return;
         e.preventDefault();
-        const x  = e.pageX - track.offsetLeft;
-        const walk = (x - startX) * 1.4;
-        track.scrollLeft = scrollLeft - walk;
+        const x = e.pageX - track.offsetLeft;
+        track.scrollLeft = startScrollLeft - (x - startX) * 1.4;
       });
+
+      // ---- Touch ----
+      track.addEventListener('touchstart', e => {
+        isInteracting = true;
+        touchStartX = e.touches[0].pageX;
+        touchStartScroll = track.scrollLeft;
+      }, { passive: true });
+
+      track.addEventListener('touchend', () => {
+        isInteracting = false;
+      });
+
+      track.addEventListener('touchmove', e => {
+        if (!isInteracting) return;
+        const x = e.touches[0].pageX;
+        track.scrollLeft = touchStartScroll - (x - touchStartX);
+      }, { passive: true });
+
+      // Pause on hover
+      track.addEventListener('mouseenter', () => { isInteracting = true; });
+      track.addEventListener('mouseleave', () => { isInteracting = false; track.style.cursor = 'grab'; });
     })();
   </script>
 
